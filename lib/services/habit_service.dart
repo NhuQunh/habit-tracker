@@ -130,6 +130,8 @@ class HabitService {
             streak: habit.streak,
             completedToday: habit.completedToday,
             category: _categoryViMap[habit.category] ?? habit.category,
+            iconKey: habit.iconKey,
+            reminderTime: habit.reminderTime,
             startDate: habit.startDate,
             lastStreakIncreaseDate: habit.lastStreakIncreaseDate,
             completionDates: habit.completionDates,

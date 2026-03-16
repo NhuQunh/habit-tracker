@@ -3,6 +3,18 @@ import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/providers/habit_provider.dart';
 import 'package:provider/provider.dart';
 
+class _HabitIconOption {
+  const _HabitIconOption({
+    required this.key,
+    required this.icon,
+    required this.label,
+  });
+
+  final String key;
+  final IconData icon;
+  final String label;
+}
+
 class HabitDetailScreen extends StatefulWidget {
   const HabitDetailScreen({super.key, required this.habitId});
 
@@ -14,6 +26,41 @@ class HabitDetailScreen extends StatefulWidget {
 
 class _HabitDetailScreenState extends State<HabitDetailScreen> {
   late DateTime _visibleMonth;
+
+  static const List<_HabitIconOption> _iconOptions = [
+    _HabitIconOption(
+      key: 'target',
+      icon: Icons.track_changes_rounded,
+      label: 'Mục tiêu',
+    ),
+    _HabitIconOption(
+      key: 'water',
+      icon: Icons.local_drink_rounded,
+      label: 'Nước',
+    ),
+    _HabitIconOption(
+      key: 'exercise',
+      icon: Icons.fitness_center_rounded,
+      label: 'Tập luyện',
+    ),
+    _HabitIconOption(key: 'book', icon: Icons.menu_book_rounded, label: 'Sách'),
+    _HabitIconOption(
+      key: 'meditate',
+      icon: Icons.self_improvement_rounded,
+      label: 'Thiền',
+    ),
+    _HabitIconOption(key: 'code', icon: Icons.code_rounded, label: 'Code'),
+    _HabitIconOption(
+      key: 'alarm',
+      icon: Icons.alarm_rounded,
+      label: 'Nhắc nhở',
+    ),
+    _HabitIconOption(
+      key: 'heart',
+      icon: Icons.favorite_rounded,
+      label: 'Sức khỏe',
+    ),
+  ];
 
   @override
   void initState() {
@@ -38,6 +85,76 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return 'Tháng ${date.month}/${date.year}';
   }
 
+  IconData _iconForKey(String key) {
+    for (final option in _iconOptions) {
+      if (option.key == key) {
+        return option.icon;
+      }
+    }
+    return Icons.track_changes_rounded;
+  }
+
+  String? _formatTimeOfDay(TimeOfDay? time) {
+    if (time == null) {
+      return null;
+    }
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  TimeOfDay? _parseReminderTime(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    final parts = value.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+
+    final hour = int.tryParse(parts.first);
+    final minute = int.tryParse(parts.last);
+    if (hour == null || minute == null) {
+      return null;
+    }
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  Future<void> _showEditHabitDialog(Habit habit) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return _EditHabitDialog(
+          initialName: habit.name,
+          initialIconKey: habit.iconKey,
+          initialReminderTime: _parseReminderTime(habit.reminderTime),
+          iconOptions: _iconOptions,
+          onSave: (name, iconKey, reminderTime) async {
+            await context.read<HabitProvider>().updateHabitDetails(
+              id: habit.id,
+              name: name,
+              iconKey: iconKey,
+              reminderTime: _formatTimeOfDay(reminderTime),
+            );
+
+            if (!mounted) {
+              return;
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Đã cập nhật thói quen')),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _toggleCompletion(bool value) async {
     await context.read<HabitProvider>().toggleHabitCompletion(
       widget.habitId,
@@ -57,11 +174,24 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(habit.name)),
+      appBar: AppBar(
+        title: Text(habit.name),
+        actions: [
+          IconButton(
+            onPressed: () => _showEditHabitDialog(habit),
+            icon: const Icon(Icons.edit_rounded),
+            tooltip: 'Chỉnh sửa thói quen',
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _HabitSummaryCard(habit: habit, onChanged: _toggleCompletion),
+          _HabitSummaryCard(
+            habit: habit,
+            iconData: _iconForKey(habit.iconKey),
+            onChanged: _toggleCompletion,
+          ),
           const SizedBox(height: 16),
           Card(
             shape: RoundedRectangleBorder(
@@ -85,9 +215,14 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 }
 
 class _HabitSummaryCard extends StatelessWidget {
-  const _HabitSummaryCard({required this.habit, required this.onChanged});
+  const _HabitSummaryCard({
+    required this.habit,
+    required this.iconData,
+    required this.onChanged,
+  });
 
   final Habit habit;
+  final IconData iconData;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -102,6 +237,34 @@ class _HabitSummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    iconData,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    habit.name,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Text(
               habit.category,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -121,6 +284,13 @@ class _HabitSummaryCard extends StatelessWidget {
               'Số ngày đã hoàn thành: ${habit.completionDates.length}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
+            const SizedBox(height: 4),
+            Text(
+              habit.reminderTime == null
+                  ? 'Nhắc nhở: Chưa cài đặt'
+                  : 'Nhắc nhở: ${habit.reminderTime}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -135,6 +305,199 @@ class _HabitSummaryCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EditHabitDialog extends StatefulWidget {
+  const _EditHabitDialog({
+    required this.initialName,
+    required this.initialIconKey,
+    required this.initialReminderTime,
+    required this.iconOptions,
+    required this.onSave,
+  });
+
+  final String initialName;
+  final String initialIconKey;
+  final TimeOfDay? initialReminderTime;
+  final List<_HabitIconOption> iconOptions;
+  final Future<void> Function(
+    String name,
+    String iconKey,
+    TimeOfDay? reminderTime,
+  )
+  onSave;
+
+  @override
+  State<_EditHabitDialog> createState() => _EditHabitDialogState();
+}
+
+class _EditHabitDialogState extends State<_EditHabitDialog> {
+  late final TextEditingController _nameController;
+  late String _selectedIconKey;
+  TimeOfDay? _selectedReminderTime;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _selectedIconKey = widget.initialIconKey;
+    _selectedReminderTime = widget.initialReminderTime;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  String _displayReminder(TimeOfDay? time) {
+    if (time == null) {
+      return 'Chưa cài đặt';
+    }
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  Future<void> _pickReminder() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _selectedReminderTime ?? TimeOfDay.now(),
+    );
+
+    if (selected == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedReminderTime = selected;
+    });
+  }
+
+  Future<void> _save() async {
+    final trimmedName = _nameController.text.trim();
+    if (trimmedName.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    await widget.onSave(trimmedName, _selectedIconKey, _selectedReminderTime);
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Chỉnh sửa thói quen'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _nameController,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Tên thói quen',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Biểu tượng',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.iconOptions.map((option) {
+                return ChoiceChip(
+                  selected: _selectedIconKey == option.key,
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(option.icon, size: 18),
+                      const SizedBox(width: 6),
+                      Text(option.label),
+                    ],
+                  ),
+                  onSelected: (selected) {
+                    if (!selected) {
+                      return;
+                    }
+                    setState(() {
+                      _selectedIconKey = option.key;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Nhắc nhở',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Giờ: ${_displayReminder(_selectedReminderTime)}',
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _pickReminder,
+                  icon: const Icon(Icons.access_time_rounded),
+                  label: const Text('Chọn giờ'),
+                ),
+              ],
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedReminderTime = null;
+                  });
+                },
+                child: const Text('Xóa nhắc nhở'),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Hủy'),
+        ),
+        FilledButton(
+          onPressed: _isSaving ? null : _save,
+          child: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Lưu'),
+        ),
+      ],
     );
   }
 }

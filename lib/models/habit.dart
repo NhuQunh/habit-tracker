@@ -5,6 +5,8 @@ class Habit {
     required this.streak,
     required this.completedToday,
     required this.category,
+    this.iconKey = 'target',
+    this.reminderTime,
     DateTime? startDate,
     this.lastStreakIncreaseDate,
     List<DateTime>? completionDates,
@@ -14,10 +16,12 @@ class Habit {
            .toList();
 
   final String id;
-  final String name;
+  String name;
   int streak;
   bool completedToday;
   final String category;
+  String iconKey;
+  String? reminderTime;
   final DateTime startDate;
   DateTime? lastStreakIncreaseDate;
   final List<DateTime> completionDates;
@@ -33,6 +37,8 @@ class Habit {
       streak: json['streak'] as int,
       completedToday: json['completedToday'] as bool,
       category: json['category'] as String,
+      iconKey: json['iconKey'] as String? ?? 'target',
+      reminderTime: json['reminderTime'] as String?,
       startDate: json['startDate'] == null
           ? DateTime.now()
           : DateTime.parse(json['startDate'] as String),
@@ -52,6 +58,8 @@ class Habit {
       'streak': streak,
       'completedToday': completedToday,
       'category': category,
+      'iconKey': iconKey,
+      'reminderTime': reminderTime,
       'startDate': startDate.toIso8601String(),
       'lastStreakIncreaseDate': lastStreakIncreaseDate?.toIso8601String(),
       'completionDates': completionDates

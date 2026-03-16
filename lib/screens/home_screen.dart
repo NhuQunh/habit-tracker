@@ -128,6 +128,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   IconData _habitIconFor(Habit habit) {
+    const iconByKey = {
+      'target': Icons.track_changes_rounded,
+      'water': Icons.local_drink_rounded,
+      'exercise': Icons.fitness_center_rounded,
+      'book': Icons.menu_book_rounded,
+      'meditate': Icons.self_improvement_rounded,
+      'code': Icons.code_rounded,
+      'alarm': Icons.alarm_rounded,
+      'heart': Icons.favorite_rounded,
+    };
+
+    final customIcon = iconByKey[habit.iconKey];
+    if (customIcon != null) {
+      return customIcon;
+    }
+
     final name = habit.name.toLowerCase();
     final category = habit.category.toLowerCase();
 

@@ -100,6 +100,27 @@ class HabitProvider extends ChangeNotifier {
     return milestoneHabit;
   }
 
+  Future<void> updateHabitDetails({
+    required String id,
+    required String name,
+    required String iconKey,
+    String? reminderTime,
+  }) async {
+    for (final habit in _habits) {
+      if (habit.id != id) {
+        continue;
+      }
+
+      habit.name = name;
+      habit.iconKey = iconKey;
+      habit.reminderTime = reminderTime;
+      break;
+    }
+
+    notifyListeners();
+    await _habitService.saveHabits(_habits);
+  }
+
   bool _isSameDate(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
