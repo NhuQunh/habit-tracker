@@ -14,6 +14,15 @@ class HabitProvider extends ChangeNotifier {
   List<Habit> get habits => List.unmodifiable(_habits);
   bool get isLoading => _isLoading;
 
+  Habit? habitById(String id) {
+    for (final habit in _habits) {
+      if (habit.id == id) {
+        return habit;
+      }
+    }
+    return null;
+  }
+
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
@@ -53,14 +62,24 @@ class HabitProvider extends ChangeNotifier {
       if (value && !habit.completedToday) {
         habit.streak += 1;
         habit.lastStreakIncreaseDate = todayDate;
+        if (!habit.completionDates.any(
+          (date) => _isSameDate(date, todayDate),
+        )) {
+          habit.completionDates.add(todayDate);
+        }
       }
 
-      if (!value && habit.completedToday && habit.streak > 0) {
-        habit.streak -= 1;
+      if (!value && habit.completedToday) {
+        if (habit.streak > 0) {
+          habit.streak -= 1;
+        }
         if (habit.lastStreakIncreaseDate != null &&
             _isSameDate(habit.lastStreakIncreaseDate!, todayDate)) {
           habit.lastStreakIncreaseDate = null;
         }
+        habit.completionDates.removeWhere(
+          (date) => _isSameDate(date, todayDate),
+        );
       }
 
       habit.completedToday = value;

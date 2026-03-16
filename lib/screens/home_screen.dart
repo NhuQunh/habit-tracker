@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/providers/habit_provider.dart';
+import 'package:habit_tracker/screens/habit_detail_screen.dart';
 import 'package:habit_tracker/widgets/add_habit_dialog.dart';
 import 'package:habit_tracker/widgets/habit_card.dart';
 import 'package:provider/provider.dart';
@@ -416,6 +417,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       habitIcon: _habitIconFor(habit),
                       streak: habit.streak,
                       completedToday: habit.completedToday,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                HabitDetailScreen(habitId: habit.id),
+                          ),
+                        );
+                      },
                       onChanged: (value) {
                         _toggleHabitCompletion(habit.id, value);
                       },

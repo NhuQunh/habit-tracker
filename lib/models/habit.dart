@@ -7,7 +7,11 @@ class Habit {
     required this.category,
     DateTime? startDate,
     this.lastStreakIncreaseDate,
-  }) : startDate = startDate ?? DateTime.now();
+    List<DateTime>? completionDates,
+  }) : startDate = startDate ?? DateTime.now(),
+       completionDates = (completionDates ?? const [])
+           .map(normalizeDate)
+           .toList();
 
   final String id;
   final String name;
@@ -16,6 +20,11 @@ class Habit {
   final String category;
   final DateTime startDate;
   DateTime? lastStreakIncreaseDate;
+  final List<DateTime> completionDates;
+
+  static DateTime normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     return Habit(
@@ -30,6 +39,9 @@ class Habit {
       lastStreakIncreaseDate: json['lastStreakIncreaseDate'] == null
           ? null
           : DateTime.parse(json['lastStreakIncreaseDate'] as String),
+      completionDates: (json['completionDates'] as List<dynamic>? ?? const [])
+          .map((item) => normalizeDate(DateTime.parse(item as String)))
+          .toList(),
     );
   }
 
@@ -42,6 +54,9 @@ class Habit {
       'category': category,
       'startDate': startDate.toIso8601String(),
       'lastStreakIncreaseDate': lastStreakIncreaseDate?.toIso8601String(),
+      'completionDates': completionDates
+          .map((date) => normalizeDate(date).toIso8601String())
+          .toList(),
     };
   }
 }

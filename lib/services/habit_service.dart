@@ -132,6 +132,7 @@ class HabitService {
             category: _categoryViMap[habit.category] ?? habit.category,
             startDate: habit.startDate,
             lastStreakIncreaseDate: habit.lastStreakIncreaseDate,
+            completionDates: habit.completionDates,
           ),
         )
         .toList();
