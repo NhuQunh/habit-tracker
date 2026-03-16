@@ -28,12 +28,45 @@ class HabitProvider extends ChangeNotifier {
     notifyListeners();
 
     _habits = await _habitService.loadHabits();
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    var hasChanges = false;
+
+    for (final habit in _habits) {
+      if (habit.lastStreakIncreaseDate == null && habit.streak > 0) {
+        // Backfill old data so streak can be evaluated consistently.
+        habit.lastStreakIncreaseDate = habit.completedToday
+            ? todayDate
+            : todayDate.subtract(const Duration(days: 1));
+        hasChanges = true;
+      }
+
+      final lastDate = habit.lastStreakIncreaseDate;
+      if (lastDate == null) {
+        continue;
+      }
+
+      final normalizedLastDate = DateTime(
+        lastDate.year,
+        lastDate.month,
+        lastDate.day,
+      );
+      final dayGap = todayDate.difference(normalizedLastDate).inDays;
+      if (dayGap > 1 && habit.streak != 0) {
+        habit.streak = 0;
+        hasChanges = true;
+      }
+    }
 
     final shouldReset = await _habitService.shouldResetCompletedForNewDay();
     if (shouldReset) {
       for (final habit in _habits) {
         habit.completedToday = false;
+        hasChanges = true;
       }
+    }
+
+    if (hasChanges) {
       await _habitService.saveHabits(_habits);
     }
 
@@ -60,6 +93,20 @@ class HabitProvider extends ChangeNotifier {
       final previousStreak = habit.streak;
 
       if (value && !habit.completedToday) {
+        final lastDate = habit.lastStreakIncreaseDate;
+        if (lastDate != null) {
+          final normalizedLastDate = DateTime(
+            lastDate.year,
+            lastDate.month,
+            lastDate.day,
+          );
+          final dayGap = todayDate.difference(normalizedLastDate).inDays;
+
+          if (dayGap > 1) {
+            habit.streak = 0;
+          }
+        }
+
         habit.streak += 1;
         habit.lastStreakIncreaseDate = todayDate;
         if (!habit.completionDates.any(

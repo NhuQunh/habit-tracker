@@ -202,6 +202,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               child: _CompletionCalendar(
                 visibleMonth: _visibleMonth,
                 completionDates: habit.completionDates,
+                streak: habit.streak,
+                completedToday: habit.completedToday,
                 onPreviousMonth: _goToPreviousMonth,
                 onNextMonth: _goToNextMonth,
                 monthLabel: _monthLabel(_visibleMonth),
@@ -281,7 +283,7 @@ class _HabitSummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Số ngày đã hoàn thành: ${habit.completionDates.length}',
+              'Tổng số ngày hoàn thành: ${habit.streak}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 4),
@@ -506,6 +508,8 @@ class _CompletionCalendar extends StatelessWidget {
   const _CompletionCalendar({
     required this.visibleMonth,
     required this.completionDates,
+    required this.streak,
+    required this.completedToday,
     required this.onPreviousMonth,
     required this.onNextMonth,
     required this.monthLabel,
@@ -513,6 +517,8 @@ class _CompletionCalendar extends StatelessWidget {
 
   final DateTime visibleMonth;
   final List<DateTime> completionDates;
+  final int streak;
+  final bool completedToday;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
   final String monthLabel;
@@ -527,10 +533,28 @@ class _CompletionCalendar extends StatelessWidget {
     'CN',
   ];
 
-  Set<DateTime> get _completedDaySet {
-    return completionDates
+  Set<DateTime> _estimatedStreakDaySet(DateTime today) {
+    final dates = <DateTime>{};
+    if (streak <= 0) {
+      return dates;
+    }
+
+    final anchorDate = completedToday
+        ? today
+        : Habit.normalizeDate(today.subtract(const Duration(days: 1)));
+
+    for (var i = 0; i < streak; i++) {
+      dates.add(Habit.normalizeDate(anchorDate.subtract(Duration(days: i))));
+    }
+
+    return dates;
+  }
+
+  Set<DateTime> _completedDaySet(DateTime today) {
+    final savedDates = completionDates
         .map((date) => DateTime(date.year, date.month, date.day))
         .toSet();
+    return {...savedDates, ..._estimatedStreakDaySet(today)};
   }
 
   @override
@@ -548,8 +572,8 @@ class _CompletionCalendar extends StatelessWidget {
       dayCells.add(const SizedBox.shrink());
     }
 
-    final completedDaySet = _completedDaySet;
     final today = Habit.normalizeDate(DateTime.now());
+    final completedDaySet = _completedDaySet(today);
 
     for (var day = 1; day <= daysInMonth; day++) {
       final currentDate = DateTime(visibleMonth.year, visibleMonth.month, day);
