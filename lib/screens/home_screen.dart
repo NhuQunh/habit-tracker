@@ -304,6 +304,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _confirmDeleteHabit(Habit habit) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Xóa thói quen'),
+          content: Text(
+            'Bạn có chắc muốn xóa "${habit.name}" không? Hành động này không thể hoàn tác.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Xóa'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    await context.read<HabitProvider>().deleteHabit(habit.id);
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đã xóa thói quen')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitProvider = context.watch<HabitProvider>();
@@ -441,6 +478,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 HabitDetailScreen(habitId: habit.id),
                           ),
                         );
+                      },
+                      onLongPress: () {
+                        _confirmDeleteHabit(habit);
                       },
                       onChanged: (value) {
                         _toggleHabitCompletion(habit.id, value);

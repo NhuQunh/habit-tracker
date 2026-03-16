@@ -162,6 +162,46 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
   }
 
+  Future<void> _confirmDeleteHabit(Habit habit) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Xóa thói quen'),
+          content: Text(
+            'Bạn có chắc muốn xóa "${habit.name}" không? Hành động này không thể hoàn tác.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Xóa'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    await context.read<HabitProvider>().deleteHabit(habit.id);
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đã xóa thói quen')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final habit = context.watch<HabitProvider>().habitById(widget.habitId);
@@ -177,6 +217,11 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       appBar: AppBar(
         title: Text(habit.name),
         actions: [
+          IconButton(
+            onPressed: () => _confirmDeleteHabit(habit),
+            icon: const Icon(Icons.delete_outline_rounded),
+            tooltip: 'Xóa thói quen',
+          ),
           IconButton(
             onPressed: () => _showEditHabitDialog(habit),
             icon: const Icon(Icons.edit_rounded),

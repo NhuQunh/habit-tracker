@@ -168,6 +168,12 @@ class HabitProvider extends ChangeNotifier {
     await _habitService.saveHabits(_habits);
   }
 
+  Future<void> deleteHabit(String id) async {
+    _habits.removeWhere((habit) => habit.id == id);
+    notifyListeners();
+    await _habitService.saveHabits(_habits);
+  }
+
   bool _isSameDate(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
