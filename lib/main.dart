@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:habit_tracker/controllers/habit_controller.dart';
 import 'package:habit_tracker/controllers/localization_provider.dart';
+import 'package:habit_tracker/firebase_options.dart';
 import 'package:habit_tracker/screens/app_shell.dart';
+import 'package:habit_tracker/screens/login_screen.dart';
+import 'package:habit_tracker/services/auth_service.dart';
 import 'package:habit_tracker/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Initialize notification service
   final notificationService = NotificationService();
@@ -112,7 +121,33 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       themeMode: _themeMode,
-      home: AppShell(onToggleTheme: _toggleTheme),
+      home: AuthWrapper(onToggleTheme: _toggleTheme),
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key, required this.onToggleTheme});
+
+  final VoidCallback onToggleTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: AuthService().authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data != null) {
+          return AppShell(onToggleTheme: onToggleTheme);
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 }

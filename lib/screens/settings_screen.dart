@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracker/controllers/localization_provider.dart';
+import 'package:habit_tracker/services/auth_service.dart';
 import 'package:habit_tracker/services/notification_service.dart';
 import 'package:habit_tracker/services/localization_service.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const String _weekSummaryKey = 'week_summary_enabled';
 
   final NotificationService _notificationService = NotificationService();
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -184,6 +186,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.info_outline_rounded),
             title: Text(localizationProvider.translate('app_version')),
             subtitle: Text(localizationProvider.translate('version')),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: ListTile(
+            leading: const Icon(Icons.logout_rounded),
+            title: const Text('Đăng xuất tài khoản Google'),
+            onTap: () async {
+              await _authService.signOut();
+            },
           ),
         ),
       ],
