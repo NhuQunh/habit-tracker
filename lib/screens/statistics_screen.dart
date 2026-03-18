@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/controllers/localization_provider.dart';
+import 'package:provider/provider.dart';
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -6,6 +8,7 @@ class StatisticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizationProvider = context.watch<LocalizationProvider>();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
@@ -13,7 +16,7 @@ class StatisticsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Thong ke',
+            localizationProvider.translate('statistics'),
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),

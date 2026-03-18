@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracker/controllers/habit_controller.dart';
+import 'package:habit_tracker/controllers/localization_provider.dart';
 import 'package:habit_tracker/screens/app_shell.dart';
+import 'package:habit_tracker/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+
+  // Check and schedule daily reminder if enabled
+  final prefs = await SharedPreferences.getInstance();
+  final isDailyReminderEnabled = prefs.getBool('daily_reminder_enabled') ?? true;
+  if (isDailyReminderEnabled) {
+    try {
+      await notificationService.scheduleDailyReminder();
+    } catch (e) {
+      debugPrint('Daily reminder scheduling skipped: $e');
+    }
+  }
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => HabitController(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => HabitController()),
+        ChangeNotifierProvider(create: (_) => LocalizationProvider()),
+      ],
       child: const MyApp(),
     ),
   );

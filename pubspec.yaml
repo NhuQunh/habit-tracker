@@ -37,6 +37,7 @@ dependencies:
   shared_preferences: ^2.3.2
   confetti: ^0.8.0
   provider: ^6.1.2
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:

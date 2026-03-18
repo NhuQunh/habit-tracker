@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/services/habit_service.dart';
+import 'package:habit_tracker/services/notification_service.dart';
 
 enum HabitFilter { all, completedToday, notCompleted, longestStreak }
 
@@ -78,6 +79,9 @@ class HabitController extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+
+    // Check if we should send weekly report (every Sunday)
+    await _checkAndSendWeeklyReport();
   }
 
   void setSearchQuery(String value) {
@@ -267,5 +271,96 @@ class HabitController extends ChangeNotifier {
 
   bool _isSameDate(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  /// Calculate weekly statistics for habit completion
+  Map<String, dynamic> calculateWeeklyStats() {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1)); // Monday
+    final endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
+
+    int totalHabits = _habits.length;
+    int totalCompletions = 0;
+    int daysInWeek = 0;
+
+    // Count days that have at least one completion this week
+    final weekDays = <DateTime>[];
+    for (int i = 0; i < 7; i++) {
+      final day = startOfWeek.add(Duration(days: i));
+      if (day.isBefore(now) || _isSameDate(day, now)) {
+        weekDays.add(day);
+      }
+    }
+    daysInWeek = weekDays.length;
+
+    // Count total completions this week
+    for (final habit in _habits) {
+      for (final completionDate in habit.completionDates) {
+        if (completionDate.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
+            completionDate.isBefore(endOfWeek.add(const Duration(days: 1)))) {
+          totalCompletions++;
+        }
+      }
+    }
+
+    // Calculate completion rate
+    double completionRate = 0.0;
+    if (totalHabits > 0 && daysInWeek > 0) {
+      completionRate = totalCompletions / (totalHabits * daysInWeek);
+      completionRate = completionRate.clamp(0.0, 1.0);
+    }
+
+    return {
+      'totalHabits': totalHabits,
+      'totalCompletions': totalCompletions,
+      'daysInWeek': daysInWeek,
+      'completionRate': completionRate,
+      'completedHabits': _habits.where((h) => h.completedToday).length,
+    };
+  }
+
+  /// Send weekly report notification if enabled
+  Future<void> sendWeeklyReportIfEnabled() async {
+    // Check if week summary is enabled in settings
+    final prefs = await _habitService.getSharedPreferences();
+    final isWeekSummaryEnabled = prefs.getBool('week_summary_enabled') ?? true;
+
+    if (!isWeekSummaryEnabled) {
+      return;
+    }
+
+    final stats = calculateWeeklyStats();
+    final notificationService = NotificationService();
+
+    await notificationService.showWeeklyReport(
+      totalHabits: stats['totalHabits'] as int,
+      completedHabits: stats['completedHabits'] as int,
+      completionRate: stats['completionRate'] as double,
+    );
+  }
+
+  /// Check if we should send weekly report (every Sunday)
+  Future<void> _checkAndSendWeeklyReport() async {
+    final now = DateTime.now();
+    final prefs = await _habitService.getSharedPreferences();
+    final lastReportKey = 'last_weekly_report_date';
+    final lastReportDateStr = prefs.getString(lastReportKey);
+
+    // Check if today is Sunday and we haven't sent report yet today
+    if (now.weekday != DateTime.sunday) {
+      return;
+    }
+
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    if (lastReportDateStr == todayStr) {
+      // Already sent report today
+      return;
+    }
+
+    // Send weekly report
+    await sendWeeklyReportIfEnabled();
+
+    // Mark as sent today
+    await prefs.setString(lastReportKey, todayStr);
   }
 }
