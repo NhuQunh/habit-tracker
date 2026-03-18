@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class HabitService {
   static const String _habitsKey = 'habits_data';
   static const String _lastOpenDateKey = 'last_open_date';
+  static const String _migrationPrefix = 'habits_firestore_migrated_';
   static const Map<String, String> _habitNameViMap = {
     'Drink Water': 'Uống nước',
     'Uong nuoc': 'Uống nước',
@@ -61,6 +62,38 @@ class HabitService {
         .toList();
 
     return _normalizeToVietnamese(loadedHabits);
+  }
+
+  Future<List<Habit>> loadLocalHabitsOrEmpty() async {
+    final prefs = await SharedPreferences.getInstance();
+    final habitsString = prefs.getString(_habitsKey);
+
+    if (habitsString == null || habitsString.isEmpty) {
+      return [];
+    }
+
+    final decoded = jsonDecode(habitsString) as List<dynamic>;
+    final loadedHabits = decoded
+        .map((item) => Habit.fromJson(item as Map<String, dynamic>))
+        .toList();
+
+    return _normalizeToVietnamese(loadedHabits);
+  }
+
+  Future<bool> hasPersistedLocalHabits() async {
+    final prefs = await SharedPreferences.getInstance();
+    final habitsString = prefs.getString(_habitsKey);
+    return habitsString != null && habitsString.isNotEmpty;
+  }
+
+  Future<bool> isFirestoreMigrationDone(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('$_migrationPrefix$userId') ?? false;
+  }
+
+  Future<void> markFirestoreMigrationDone(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('$_migrationPrefix$userId', true);
   }
 
   Future<void> saveHabits(List<Habit> habits) async {
