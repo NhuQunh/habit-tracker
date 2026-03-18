@@ -1,21 +1,22 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../models/habit.dart';
 
 class ProgressChart extends StatefulWidget {
-  const ProgressChart({super.key});
+  final List<Habit> habits; // Nhận dữ liệu thật từ màn hình Statistics
+
+  const ProgressChart({super.key, required this.habits});
 
   @override
   State<ProgressChart> createState() => _ProgressChartState();
 }
 
 class _ProgressChartState extends State<ProgressChart> {
-  // Biến trạng thái để kích hoạt animation
   bool _isLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    // Tạo độ trễ 100ms trước khi bơm dữ liệu thật vào để fl_chart tự chạy animation
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         setState(() {
@@ -25,14 +26,37 @@ class _ProgressChartState extends State<ProgressChart> {
     });
   }
 
+  // Hàm so sánh ngày (bỏ qua giờ phút giây)
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now();
+    List<int> completedCounts = List.filled(7, 0);
+    
+    // Thu thập số lượng check-in của 7 ngày qua
+    for (int i = 0; i < 7; i++) {
+      final targetDate = today.subtract(Duration(days: 6 - i));
+      final count = widget.habits.where((habit) {
+        return habit.completionDates.any((date) => _isSameDate(date, targetDate));
+      }).length;
+      completedCounts[i] = count;
+    }
+
+    // Tự động scale độ cao trục Y dựa trên ngày có số Habit hoàn thành nhiều nhất
+    double maxY = 5.0;
+    for (var count in completedCounts) {
+      if (count > maxY) maxY = count.toDouble();
+    }
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: 5.0, 
+          maxY: maxY + 1, // Dư ra 1 ô phía trên cho đẹp
           barTouchData: BarTouchData(enabled: false),
           titlesData: FlTitlesData(
             show: true,
@@ -45,18 +69,22 @@ class _ProgressChartState extends State<ProgressChart> {
                     fontWeight: FontWeight.bold, 
                     fontSize: 12,
                   );
-                  Widget text;
-                  switch (value.toInt()) {
-                    case 0: text = const Text('Mon', style: style); break;
-                    case 1: text = const Text('Tue', style: style); break;
-                    case 2: text = const Text('Wed', style: style); break;
-                    case 3: text = const Text('Thu', style: style); break;
-                    case 4: text = const Text('Fri', style: style); break;
-                    case 5: text = const Text('Sat', style: style); break;
-                    case 6: text = const Text('Sun', style: style); break;
-                    default: text = const Text('', style: style); break;
+                  
+                  // Trục X tự động sinh ra Thứ (Mon, Tue...) của 7 ngày gần nhất
+                  final targetDate = today.subtract(Duration(days: 6 - value.toInt()));
+                  String text;
+                  switch (targetDate.weekday) {
+                    case 1: text = 'Mon'; break;
+                    case 2: text = 'Tue'; break;
+                    case 3: text = 'Wed'; break;
+                    case 4: text = 'Thu'; break;
+                    case 5: text = 'Fri'; break;
+                    case 6: text = 'Sat'; break;
+                    case 7: text = 'Sun'; break;
+                    default: text = '';
                   }
-                  return SideTitleWidget(meta: meta, space: 4.0, child: text);
+                  
+                  return SideTitleWidget(meta: meta, space: 4.0, child: Text(text, style: style));
                 },
               ),
             ),
@@ -67,22 +95,16 @@ class _ProgressChartState extends State<ProgressChart> {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            horizontalInterval: 1.0, 
+            horizontalInterval: 1.0,
             getDrawingHorizontalLine: (value) => FlLine(
-              color: Colors.grey.withValues(alpha: 0.2), // Đã cập nhật chuẩn mới
-              strokeWidth: 1.0, 
+              color: Colors.grey.withValues(alpha: 0.2),
+              strokeWidth: 1.0,
             ),
           ),
-          borderData: FlBorderData(show: false), 
-          barGroups: [
-            _buildBarGroup(0, _isLoaded ? 3.0 : 0.0), 
-            _buildBarGroup(1, _isLoaded ? 4.0 : 0.0), 
-            _buildBarGroup(2, _isLoaded ? 2.0 : 0.0), 
-            _buildBarGroup(3, _isLoaded ? 5.0 : 0.0), 
-            _buildBarGroup(4, _isLoaded ? 3.0 : 0.0), 
-            _buildBarGroup(5, _isLoaded ? 4.0 : 0.0), 
-            _buildBarGroup(6, _isLoaded ? 4.0 : 0.0), 
-          ],
+          borderData: FlBorderData(show: false),
+          barGroups: List.generate(7, (index) {
+            return _buildBarGroup(index, _isLoaded ? completedCounts[index].toDouble() : 0.0);
+          }),
         ),
         swapAnimationDuration: const Duration(milliseconds: 800),
         swapAnimationCurve: Curves.easeOutQuint,
@@ -97,7 +119,7 @@ class _ProgressChartState extends State<ProgressChart> {
         BarChartRodData(
           toY: y,
           color: Colors.blueAccent,
-          width: 16.0, 
+          width: 16.0,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(6),
             topRight: Radius.circular(6),
