@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core_platform_interface/test.dart';
 import 'package:habit_tracker/controllers/habit_controller.dart';
 import 'package:habit_tracker/controllers/localization_provider.dart';
-import 'package:habit_tracker/main.dart';
+import 'package:habit_tracker/screens/app_shell.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    setupFirebaseCoreMocks();
+    await Firebase.initializeApp();
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
@@ -18,7 +26,11 @@ void main() {
           ChangeNotifierProvider(create: (_) => HabitController()),
           ChangeNotifierProvider(create: (_) => LocalizationProvider()),
         ],
-        child: const MyApp(),
+        child: MaterialApp(
+          home: AppShell(
+            onToggleTheme: () {},
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();

@@ -33,10 +33,6 @@ class LocalizationService {
         'delete_habit_message':
           'Are you sure you want to delete "{habitName}"? This action cannot be undone.',
         'habit_deleted': 'Habit deleted',
-        'all': 'All',
-        'completed_today': 'Completed today',
-        'not_completed': 'Not completed',
-        'longest_streak': 'Longest streak',
 
         // Add Habit Dialog
         'add_habit_title': 'Add new habit',
@@ -89,7 +85,6 @@ class LocalizationService {
       'completion_dates': 'Completion Dates',
       'current_streak': 'Current Streak',
       'longest_streak_value': 'Longest Streak',
-      'start_date': 'Start Date',
 
       // Bottom Navigation
       'home': 'Home',
@@ -126,10 +121,6 @@ class LocalizationService {
         'delete_habit_message':
           'Bạn có chắc muốn xóa "{habitName}" không? Hành động này không thể hoàn tác.',
         'habit_deleted': 'Đã xóa thói quen',
-        'all': 'Tất cả',
-        'completed_today': 'Đã hoàn thành hôm nay',
-        'not_completed': 'Chưa hoàn thành',
-        'longest_streak': 'Streak dài nhất',
 
         // Add Habit Dialog
         'add_habit_title': 'Thêm thói quen mới',
@@ -182,7 +173,6 @@ class LocalizationService {
       'completion_dates': 'Ngày hoàn thành',
       'current_streak': 'Chuỗi ngày hiện tại',
       'longest_streak_value': 'Chuỗi ngày dài nhất',
-      'start_date': 'Ngày bắt đầu',
 
       // Bottom Navigation
       'home': 'Trang chủ',
