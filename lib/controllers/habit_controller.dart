@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:habit_tracker/models/habit.dart';
+import 'package:habit_tracker/services/firebase_service.dart';
 import 'package:habit_tracker/services/habit_service.dart';
 import 'package:habit_tracker/services/notification_service.dart';
 
@@ -11,6 +15,9 @@ class HabitController extends ChangeNotifier {
   }
 
   final HabitService _habitService = HabitService();
+  final FirebaseService _firebaseService = FirebaseService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  StreamSubscription<List<Habit>>? _cloudHabitsSubscription;
   List<Habit> _habits = [];
   bool _isLoading = true;
   HabitFilter _selectedFilter = HabitFilter.all;
@@ -36,6 +43,16 @@ class HabitController extends ChangeNotifier {
     notifyListeners();
 
     _habits = await _habitService.loadHabits();
+    final user = _auth.currentUser;
+    if (user != null) {
+      await _migrateLocalHabitsIfNeeded(user.uid);
+      await _refreshHabitsFromCloud(user.uid);
+      _listenCloudHabits(user.uid);
+    } else {
+      await _cloudHabitsSubscription?.cancel();
+      _cloudHabitsSubscription = null;
+    }
+
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     var hasChanges = false;
@@ -74,7 +91,7 @@ class HabitController extends ChangeNotifier {
     }
 
     if (hasChanges) {
-      await _habitService.saveHabits(_habits);
+      await _persistHabits();
     }
 
     _isLoading = false;
@@ -117,7 +134,7 @@ class HabitController extends ChangeNotifier {
   Future<void> addHabit(Habit habit) async {
     _habits = [habit, ..._habits];
     notifyListeners();
-    await _habitService.saveHabits(_habits);
+    await _persistHabits();
   }
 
   Future<Habit?> toggleHabitCompletion(String id, bool value) async {
@@ -183,7 +200,7 @@ class HabitController extends ChangeNotifier {
     }
 
     notifyListeners();
-    await _habitService.saveHabits(_habits);
+    await _persistHabits();
     return milestoneHabit;
   }
 
@@ -205,13 +222,98 @@ class HabitController extends ChangeNotifier {
     }
 
     notifyListeners();
-    await _habitService.saveHabits(_habits);
+    await _persistHabits();
   }
 
   Future<void> deleteHabit(String id) async {
     _habits.removeWhere((habit) => habit.id == id);
     notifyListeners();
+    await _persistHabits();
+  }
+
+  Future<void> _migrateLocalHabitsIfNeeded(String userId) async {
+    final migrationDone = await _habitService.isFirestoreMigrationDone(userId);
+    if (migrationDone) {
+      return;
+    }
+
+    final hasPersistedLocalData = await _habitService.hasPersistedLocalHabits();
+    if (!hasPersistedLocalData) {
+      await _habitService.markFirestoreMigrationDone(userId);
+      return;
+    }
+
+    final cloudHabits = await _firebaseService.getHabits(userId);
+    if (cloudHabits.isEmpty) {
+      final localHabits = await _habitService.loadLocalHabitsOrEmpty();
+      if (localHabits.isNotEmpty) {
+        await _firebaseService.setHabits(userId, localHabits);
+      }
+    }
+
+    await _habitService.markFirestoreMigrationDone(userId);
+  }
+
+  Future<void> _refreshHabitsFromCloud(String userId) async {
+    try {
+      final cloudHabits = await _firebaseService.getHabits(userId);
+      if (cloudHabits.isNotEmpty) {
+        _habits = cloudHabits;
+        await _habitService.saveHabits(_habits);
+      }
+    } catch (_) {
+      // Keep local data if cloud fetch fails.
+    }
+  }
+
+  void _listenCloudHabits(String userId) {
+    _cloudHabitsSubscription?.cancel();
+    _cloudHabitsSubscription = _firebaseService.watchHabits(userId).listen((
+      cloudHabits,
+    ) {
+      if (_sameHabitsState(_habits, cloudHabits)) {
+        return;
+      }
+
+      _habits = cloudHabits;
+      _habitService.saveHabits(_habits);
+      notifyListeners();
+    });
+  }
+
+  bool _sameHabitsState(List<Habit> first, List<Habit> second) {
+    if (first.length != second.length) {
+      return false;
+    }
+
+    for (var i = 0; i < first.length; i++) {
+      if (!mapEquals(first[i].toJson(), second[i].toJson())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Future<void> _persistHabits() async {
     await _habitService.saveHabits(_habits);
+
+    final user = _auth.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    try {
+      await _firebaseService.setHabits(user.uid, _habits);
+    } catch (_) {
+      // Local cache is the source of truth while offline.
+    }
+  }
+
+  @override
+  void dispose() {
+    _cloudHabitsSubscription?.cancel();
+    super.dispose();
   }
 
   String _normalizeText(String value) {
