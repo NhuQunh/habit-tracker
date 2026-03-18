@@ -255,15 +255,12 @@ class HabitController extends ChangeNotifier {
   }
 
   Future<void> _refreshHabitsFromCloud(String userId) async {
-    try {
-      final cloudHabits = await _firebaseService.getHabits(userId);
-      if (cloudHabits.isNotEmpty) {
-        _habits = cloudHabits;
-        await _habitService.saveHabits(_habits);
-      }
-    } catch (_) {
-      // Keep local data if cloud fetch fails.
-    }
+    final cloudOrCachedHabits = await _firebaseService.getHabitsWithLocalFallback(
+      userId,
+      _habits,
+    );
+    _habits = cloudOrCachedHabits;
+    await _habitService.saveHabits(_habits);
   }
 
   void _listenCloudHabits(String userId) {
@@ -278,6 +275,8 @@ class HabitController extends ChangeNotifier {
       _habits = cloudHabits;
       _habitService.saveHabits(_habits);
       notifyListeners();
+    }, onError: (_) {
+      // Continue using local data until Firestore stream recovers.
     });
   }
 

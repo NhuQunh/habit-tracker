@@ -14,7 +14,7 @@ class FirebaseService {
   Stream<List<Habit>> watchHabits(String userId) {
     return _habitsCollection(userId)
         .orderBy('createdAt', descending: false)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map(
           (snapshot) => snapshot.docs
               .map((doc) {
@@ -38,6 +38,31 @@ class FirebaseService {
           return Habit.fromJson(data);
         })
         .toList();
+  }
+
+  Future<List<Habit>> getHabitsWithLocalFallback(
+    String userId,
+    List<Habit> localHabits,
+  ) async {
+    try {
+      final snapshot = await _habitsCollection(userId)
+          .orderBy('createdAt', descending: false)
+          .get(const GetOptions(source: Source.serverAndCache));
+
+      if (snapshot.docs.isEmpty) {
+        return localHabits;
+      }
+
+      return snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return Habit.fromJson(data);
+          })
+          .toList();
+    } catch (_) {
+      return localHabits;
+    }
   }
 
   Future<void> setHabits(String userId, List<Habit> habits) async {
