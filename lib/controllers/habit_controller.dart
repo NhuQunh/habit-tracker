@@ -11,13 +11,24 @@ enum HabitFilter { all, completedToday, notCompleted, longestStreak }
 
 class HabitController extends ChangeNotifier {
   HabitController() {
+    _activeUserId = _auth.currentUser?.uid;
+    _authSubscription = _auth.authStateChanges().listen((user) async {
+      final nextUserId = user?.uid;
+      if (_activeUserId == nextUserId) {
+        return;
+      }
+      _activeUserId = nextUserId;
+      await initialize();
+    });
     initialize();
   }
 
   final HabitService _habitService = HabitService();
   final FirebaseService _firebaseService = FirebaseService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  StreamSubscription<User?>? _authSubscription;
   StreamSubscription<List<Habit>>? _cloudHabitsSubscription;
+  String? _activeUserId;
   List<Habit> _habits = [];
   bool _isLoading = true;
   HabitFilter _selectedFilter = HabitFilter.all;
@@ -42,63 +53,76 @@ class HabitController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _habits = await _habitService.loadHabits();
-    final user = _auth.currentUser;
-    if (user != null) {
-      await _migrateLocalHabitsIfNeeded(user.uid);
-      await _refreshHabitsFromCloud(user.uid);
-      _listenCloudHabits(user.uid);
-    } else {
-      await _cloudHabitsSubscription?.cancel();
-      _cloudHabitsSubscription = null;
-    }
-
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-    var hasChanges = false;
-
-    for (final habit in _habits) {
-      if (habit.lastStreakIncreaseDate == null && habit.streak > 0) {
-        habit.lastStreakIncreaseDate = habit.completedToday
-            ? todayDate
-            : todayDate.subtract(const Duration(days: 1));
-        hasChanges = true;
+    try {
+      _habits = await _habitService.loadHabits(userId: _activeUserId);
+      if (_activeUserId != null) {
+        try {
+          await _migrateLocalHabitsIfNeeded(_activeUserId!);
+          await _refreshHabitsFromCloud(_activeUserId!);
+          _listenCloudHabits(_activeUserId!);
+        } catch (error, stackTrace) {
+          debugPrint('Cloud sync init failed: $error');
+          debugPrintStack(stackTrace: stackTrace);
+        }
+      } else {
+        await _cloudHabitsSubscription?.cancel();
+        _cloudHabitsSubscription = null;
       }
 
-      final lastDate = habit.lastStreakIncreaseDate;
-      if (lastDate == null) {
-        continue;
-      }
+      final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+      var hasChanges = false;
 
-      final normalizedLastDate = DateTime(
-        lastDate.year,
-        lastDate.month,
-        lastDate.day,
-      );
-      final dayGap = todayDate.difference(normalizedLastDate).inDays;
-      if (dayGap > 1 && habit.streak != 0) {
-        habit.streak = 0;
-        hasChanges = true;
-      }
-    }
-
-    final shouldReset = await _habitService.shouldResetCompletedForNewDay();
-    if (shouldReset) {
       for (final habit in _habits) {
-        habit.completedToday = false;
-        hasChanges = true;
+        if (habit.lastStreakIncreaseDate == null && habit.streak > 0) {
+          habit.lastStreakIncreaseDate = habit.completedToday
+              ? todayDate
+              : todayDate.subtract(const Duration(days: 1));
+          hasChanges = true;
+        }
+
+        final lastDate = habit.lastStreakIncreaseDate;
+        if (lastDate == null) {
+          continue;
+        }
+
+        final normalizedLastDate = DateTime(
+          lastDate.year,
+          lastDate.month,
+          lastDate.day,
+        );
+        final dayGap = todayDate.difference(normalizedLastDate).inDays;
+        if (dayGap > 1 && habit.streak != 0) {
+          habit.streak = 0;
+          hasChanges = true;
+        }
       }
+
+      final shouldReset = await _habitService.shouldResetCompletedForNewDay();
+      if (shouldReset) {
+        for (final habit in _habits) {
+          habit.completedToday = false;
+          hasChanges = true;
+        }
+      }
+
+      if (hasChanges) {
+        await _persistHabits();
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Habit initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
 
-    if (hasChanges) {
-      await _persistHabits();
+    try {
+      // Check if we should send weekly report (every Sunday)
+      await _checkAndSendWeeklyReport();
+    } catch (_) {
+      // Keep startup resilient even if notifications are unavailable.
     }
-
-    _isLoading = false;
-    notifyListeners();
-
-    // Check if we should send weekly report (every Sunday)
-    await _checkAndSendWeeklyReport();
   }
 
   void setSearchQuery(String value) {
@@ -237,7 +261,9 @@ class HabitController extends ChangeNotifier {
       return;
     }
 
-    final hasPersistedLocalData = await _habitService.hasPersistedLocalHabits();
+    final hasPersistedLocalData = await _habitService.hasPersistedLocalHabits(
+      userId: userId,
+    );
     if (!hasPersistedLocalData) {
       await _habitService.markFirestoreMigrationDone(userId);
       return;
@@ -245,7 +271,9 @@ class HabitController extends ChangeNotifier {
 
     final cloudHabits = await _firebaseService.getHabits(userId);
     if (cloudHabits.isEmpty) {
-      final localHabits = await _habitService.loadLocalHabitsOrEmpty();
+      final localHabits = await _habitService.loadLocalHabitsOrEmpty(
+        userId: userId,
+      );
       if (localHabits.isNotEmpty) {
         await _firebaseService.setHabits(userId, localHabits);
       }
@@ -260,7 +288,7 @@ class HabitController extends ChangeNotifier {
       _habits,
     );
     _habits = cloudOrCachedHabits;
-    await _habitService.saveHabits(_habits);
+    await _habitService.saveHabits(_habits, userId: userId);
   }
 
   void _listenCloudHabits(String userId) {
@@ -273,7 +301,7 @@ class HabitController extends ChangeNotifier {
       }
 
       _habits = cloudHabits;
-      _habitService.saveHabits(_habits);
+      _habitService.saveHabits(_habits, userId: userId);
       notifyListeners();
     }, onError: (_) {
       // Continue using local data until Firestore stream recovers.
@@ -295,15 +323,15 @@ class HabitController extends ChangeNotifier {
   }
 
   Future<void> _persistHabits() async {
-    await _habitService.saveHabits(_habits);
+    await _habitService.saveHabits(_habits, userId: _activeUserId);
 
-    final user = _auth.currentUser;
-    if (user == null) {
+    final userId = _activeUserId;
+    if (userId == null) {
       return;
     }
 
     try {
-      await _firebaseService.setHabits(user.uid, _habits);
+      await _firebaseService.setHabits(userId, _habits);
     } catch (_) {
       // Local cache is the source of truth while offline.
     }
@@ -311,6 +339,7 @@ class HabitController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _cloudHabitsSubscription?.cancel();
     super.dispose();
   }

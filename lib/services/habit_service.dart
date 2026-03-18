@@ -48,11 +48,23 @@ class HabitService {
     return await SharedPreferences.getInstance();
   }
 
-  Future<List<Habit>> loadHabits() async {
+  String _habitsKeyForUser(String? userId) {
+    if (userId == null || userId.isEmpty) {
+      return _habitsKey;
+    }
+    return '${_habitsKey}_$userId';
+  }
+
+  Future<List<Habit>> loadHabits({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    final habitsString = prefs.getString(_habitsKey);
+    final scopedKey = _habitsKeyForUser(userId);
+    final habitsString = prefs.getString(scopedKey);
 
     if (habitsString == null || habitsString.isEmpty) {
+      if (userId != null && userId.isNotEmpty) {
+        // New Google account starts from an empty habit list.
+        return [];
+      }
       return _defaultHabits();
     }
 
@@ -64,9 +76,10 @@ class HabitService {
     return _normalizeToVietnamese(loadedHabits);
   }
 
-  Future<List<Habit>> loadLocalHabitsOrEmpty() async {
+  Future<List<Habit>> loadLocalHabitsOrEmpty({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    final habitsString = prefs.getString(_habitsKey);
+    final scopedKey = _habitsKeyForUser(userId);
+    final habitsString = prefs.getString(scopedKey);
 
     if (habitsString == null || habitsString.isEmpty) {
       return [];
@@ -80,10 +93,15 @@ class HabitService {
     return _normalizeToVietnamese(loadedHabits);
   }
 
-  Future<bool> hasPersistedLocalHabits() async {
+  Future<bool> hasPersistedLocalHabits({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    final habitsString = prefs.getString(_habitsKey);
-    return habitsString != null && habitsString.isNotEmpty;
+    final scopedKey = _habitsKeyForUser(userId);
+    final scopedHabits = prefs.getString(scopedKey);
+    if (scopedHabits != null && scopedHabits.isNotEmpty) {
+      return true;
+    }
+
+    return false;
   }
 
   Future<bool> isFirestoreMigrationDone(String userId) async {
@@ -96,10 +114,10 @@ class HabitService {
     await prefs.setBool('$_migrationPrefix$userId', true);
   }
 
-  Future<void> saveHabits(List<Habit> habits) async {
+  Future<void> saveHabits(List<Habit> habits, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(habits.map((habit) => habit.toJson()).toList());
-    await prefs.setString(_habitsKey, encoded);
+    await prefs.setString(_habitsKeyForUser(userId), encoded);
   }
 
   Future<bool> shouldResetCompletedForNewDay() async {
