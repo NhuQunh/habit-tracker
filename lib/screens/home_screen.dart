@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'package:habit_tracker/controllers/habit_controller.dart';
+import 'package:habit_tracker/controllers/localization_provider.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/screens/habit_detail_screen.dart';
-import 'package:habit_tracker/widgets/add_habit_dialog.dart';
 import 'package:habit_tracker/widgets/habit_card.dart';
 import 'package:provider/provider.dart';
 
@@ -27,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _openFilterSheet() async {
     final habitController = context.read<HabitController>();
+    final localizationProvider = context.read<LocalizationProvider>();
     final selected = await showModalBottomSheet<HabitFilter>(
       context: context,
       showDragHandle: true,
@@ -39,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Lọc danh sách',
+                  localizationProvider.translate('filter'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -190,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: IconButton(
                           onPressed: () => Navigator.of(dialogContext).pop(),
                           icon: const Icon(Icons.close),
-                          tooltip: 'Đóng',
+                          tooltip: context.read<LocalizationProvider>().translate('delete_cancel'),
                         ),
                       ),
                     ],
@@ -251,23 +252,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _confirmDeleteHabit(Habit habit) async {
+    final localizationProvider = context.read<LocalizationProvider>();
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Xóa thói quen'),
+          title: Text(localizationProvider.translate('delete_confirm')),
           content: Text(
             'Bạn có chắc muốn xóa "${habit.name}" không? Hành động này không thể hoàn tác.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Hủy'),
+              child: Text(localizationProvider.translate('delete_cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Xóa'),
+              child: Text(localizationProvider.translate('delete_confirm_btn')),
             ),
           ],
         );
@@ -284,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Đã xóa thói quen')));
+    ).showSnackBar(SnackBar(content: Text('Đã xóa thói quen')));
   }
 
   @override
@@ -465,15 +467,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog<void>(
-            context: context,
-            builder: (_) => const AddHabitDialog(),
-          );
-        },
-        child: const Icon(Icons.add_task_rounded),
       ),
     );
   }

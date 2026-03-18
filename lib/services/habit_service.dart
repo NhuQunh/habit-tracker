@@ -43,6 +43,10 @@ class HabitService {
     'Công nghệ': 'Công nghệ',
   };
 
+  Future<SharedPreferences> getSharedPreferences() async {
+    return await SharedPreferences.getInstance();
+  }
+
   Future<List<Habit>> loadHabits() async {
     final prefs = await SharedPreferences.getInstance();
     final habitsString = prefs.getString(_habitsKey);

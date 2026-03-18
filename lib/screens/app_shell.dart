@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/controllers/localization_provider.dart';
 import 'package:habit_tracker/screens/home_screen.dart';
 import 'package:habit_tracker/screens/settings_screen.dart';
 import 'package:habit_tracker/screens/statistics_screen.dart';
+import 'package:provider/provider.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.onToggleTheme});
@@ -25,10 +27,11 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = context.watch<LocalizationProvider>();
     final tabs = [
       HomeScreen(onToggleTheme: widget.onToggleTheme),
       const StatisticsScreen(),
-      const SettingsScreen(),
+      SettingsScreen(onToggleTheme: widget.onToggleTheme),
     ];
 
     return Scaffold(
@@ -52,18 +55,18 @@ class _AppShellState extends State<AppShell> {
           selectedItemColor: _selectedColor,
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Trang chu',
+              icon: const Icon(Icons.home_rounded),
+              label: localizationProvider.translate('home'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_rounded),
-              label: 'Thong ke',
+              icon: const Icon(Icons.bar_chart_rounded),
+              label: localizationProvider.translate('stats'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings_rounded),
-              label: 'Cai dat',
+              icon: const Icon(Icons.settings_rounded),
+              label: localizationProvider.translate('settings'),
             ),
           ],
         ),
