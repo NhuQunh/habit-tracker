@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/controllers/habit_controller.dart';
 import 'package:habit_tracker/models/habit.dart';
-import 'package:habit_tracker/providers/habit_provider.dart';
 import 'package:provider/provider.dart';
 
 class _HabitIconOption {
@@ -135,7 +135,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           initialReminderTime: _parseReminderTime(habit.reminderTime),
           iconOptions: _iconOptions,
           onSave: (name, iconKey, reminderTime) async {
-            await context.read<HabitProvider>().updateHabitDetails(
+            await context.read<HabitController>().updateHabitDetails(
               id: habit.id,
               name: name,
               iconKey: iconKey,
@@ -156,7 +156,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 
   Future<void> _toggleCompletion(bool value) async {
-    await context.read<HabitProvider>().toggleHabitCompletion(
+    await context.read<HabitController>().toggleHabitCompletion(
       widget.habitId,
       value,
     );
@@ -190,7 +190,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       return;
     }
 
-    await context.read<HabitProvider>().deleteHabit(habit.id);
+    await context.read<HabitController>().deleteHabit(habit.id);
 
     if (!mounted) {
       return;
@@ -204,7 +204,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final habit = context.watch<HabitProvider>().habitById(widget.habitId);
+    final habit = context.watch<HabitController>().habitById(widget.habitId);
 
     if (habit == null) {
       return Scaffold(

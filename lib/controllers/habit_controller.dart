@@ -2,17 +2,24 @@ import 'package:flutter/foundation.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/services/habit_service.dart';
 
-class HabitProvider extends ChangeNotifier {
-  HabitProvider() {
+enum HabitFilter { all, completedToday, notCompleted, longestStreak }
+
+class HabitController extends ChangeNotifier {
+  HabitController() {
     initialize();
   }
 
   final HabitService _habitService = HabitService();
   List<Habit> _habits = [];
   bool _isLoading = true;
+  HabitFilter _selectedFilter = HabitFilter.all;
+  String _searchQuery = '';
 
   List<Habit> get habits => List.unmodifiable(_habits);
   bool get isLoading => _isLoading;
+  HabitFilter get selectedFilter => _selectedFilter;
+  String get searchQuery => _searchQuery;
+  List<Habit> get filteredHabits => _filteredHabits(_habits);
 
   Habit? habitById(String id) {
     for (final habit in _habits) {
@@ -34,7 +41,6 @@ class HabitProvider extends ChangeNotifier {
 
     for (final habit in _habits) {
       if (habit.lastStreakIncreaseDate == null && habit.streak > 0) {
-        // Backfill old data so streak can be evaluated consistently.
         habit.lastStreakIncreaseDate = habit.completedToday
             ? todayDate
             : todayDate.subtract(const Duration(days: 1));
@@ -72,6 +78,36 @@ class HabitProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  void setSearchQuery(String value) {
+    final normalized = value.trim();
+    if (_searchQuery == normalized) {
+      return;
+    }
+    _searchQuery = normalized;
+    notifyListeners();
+  }
+
+  void setFilter(HabitFilter filter) {
+    if (_selectedFilter == filter) {
+      return;
+    }
+    _selectedFilter = filter;
+    notifyListeners();
+  }
+
+  String filterLabel(HabitFilter filter) {
+    switch (filter) {
+      case HabitFilter.all:
+        return 'Tất cả';
+      case HabitFilter.completedToday:
+        return 'Đã hoàn thành hôm nay';
+      case HabitFilter.notCompleted:
+        return 'Chưa hoàn thành';
+      case HabitFilter.longestStreak:
+        return 'Streak dài nhất';
+    }
   }
 
   Future<void> addHabit(Habit habit) async {
@@ -172,6 +208,61 @@ class HabitProvider extends ChangeNotifier {
     _habits.removeWhere((habit) => habit.id == id);
     notifyListeners();
     await _habitService.saveHabits(_habits);
+  }
+
+  String _normalizeText(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'), 'a')
+        .replaceAll(RegExp(r'[èéẹẻẽêềếệểễ]'), 'e')
+        .replaceAll(RegExp(r'[ìíịỉĩ]'), 'i')
+        .replaceAll(RegExp(r'[òóọỏõôồốộổỗơờớợởỡ]'), 'o')
+        .replaceAll(RegExp(r'[ùúụủũưừứựửữ]'), 'u')
+        .replaceAll(RegExp(r'[ỳýỵỷỹ]'), 'y')
+        .replaceAll('đ', 'd');
+  }
+
+  bool _matchesSearchQuery(Habit habit) {
+    final query = _normalizeText(_searchQuery);
+    if (query.isEmpty) {
+      return true;
+    }
+
+    final searchableFields = [
+      habit.name,
+      habit.category,
+      habit.streak.toString(),
+      '${habit.streak} ngày',
+      habit.completedToday ? 'đã hoàn thành' : 'chưa hoàn thành',
+      habit.completedToday ? 'hoan thanh' : 'chua hoan thanh',
+    ];
+
+    return searchableFields
+        .map(_normalizeText)
+        .any((field) => field.contains(query));
+  }
+
+  List<Habit> _filteredHabits(List<Habit> allHabits) {
+    final results = allHabits.where((habit) {
+      final matchesSearch = _matchesSearchQuery(habit);
+
+      switch (_selectedFilter) {
+        case HabitFilter.completedToday:
+          return matchesSearch && habit.completedToday;
+        case HabitFilter.notCompleted:
+          return matchesSearch && !habit.completedToday;
+        case HabitFilter.longestStreak:
+          return matchesSearch;
+        case HabitFilter.all:
+          return matchesSearch;
+      }
+    }).toList();
+
+    if (_selectedFilter == HabitFilter.longestStreak) {
+      results.sort((a, b) => b.streak.compareTo(a.streak));
+    }
+
+    return results;
   }
 
   bool _isSameDate(DateTime a, DateTime b) {

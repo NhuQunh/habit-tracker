@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:habit_tracker/controllers/habit_controller.dart';
 import 'package:habit_tracker/models/habit.dart';
-import 'package:habit_tracker/providers/habit_provider.dart';
 import 'package:habit_tracker/screens/habit_detail_screen.dart';
 import 'package:habit_tracker/widgets/add_habit_dialog.dart';
 import 'package:habit_tracker/widgets/habit_card.dart';
 import 'package:provider/provider.dart';
-
-enum HabitFilter {
-  all,
-  completedToday,
-  notCompleted,
-  longestStreak,
-  newestStartDate,
-  oldestStartDate,
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.onToggleTheme});
@@ -28,103 +19,58 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  HabitFilter _selectedFilter = HabitFilter.all;
-  String _searchQuery = '';
-
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  String _normalizeText(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll(RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'), 'a')
-        .replaceAll(RegExp(r'[èéẹẻẽêềếệểễ]'), 'e')
-        .replaceAll(RegExp(r'[ìíịỉĩ]'), 'i')
-        .replaceAll(RegExp(r'[òóọỏõôồốộổỗơờớợởỡ]'), 'o')
-        .replaceAll(RegExp(r'[ùúụủũưừứựửữ]'), 'u')
-        .replaceAll(RegExp(r'[ỳýỵỷỹ]'), 'y')
-        .replaceAll('đ', 'd');
-  }
+  Future<void> _openFilterSheet() async {
+    final habitController = context.read<HabitController>();
+    final selected = await showModalBottomSheet<HabitFilter>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lọc danh sách',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...HabitFilter.values.map(
+                  (filter) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      filter == habitController.selectedFilter
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                    ),
+                    title: Text(habitController.filterLabel(filter)),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop(filter);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
-  bool _matchesSearchQuery(Habit habit) {
-    final query = _normalizeText(_searchQuery.trim());
-    if (query.isEmpty) {
-      return true;
+    if (!mounted || selected == null) {
+      return;
     }
 
-    final searchableFields = [
-      habit.name,
-      habit.category,
-      habit.streak.toString(),
-      '${habit.streak} ngày',
-      _formatDate(habit.startDate),
-      habit.completedToday ? 'đã hoàn thành' : 'chưa hoàn thành',
-      habit.completedToday ? 'hoan thanh' : 'chua hoan thanh',
-    ];
-
-    return searchableFields
-        .map(_normalizeText)
-        .any((field) => field.contains(query));
-  }
-
-  List<Habit> _filteredHabits(List<Habit> allHabits) {
-    var results = allHabits.where((habit) {
-      final matchesSearch = _matchesSearchQuery(habit);
-
-      switch (_selectedFilter) {
-        case HabitFilter.completedToday:
-          return matchesSearch && habit.completedToday;
-        case HabitFilter.notCompleted:
-          return matchesSearch && !habit.completedToday;
-        case HabitFilter.longestStreak:
-          return matchesSearch;
-        case HabitFilter.newestStartDate:
-          return matchesSearch;
-        case HabitFilter.oldestStartDate:
-          return matchesSearch;
-        case HabitFilter.all:
-          return matchesSearch;
-      }
-    }).toList();
-
-    if (_selectedFilter == HabitFilter.longestStreak) {
-      results.sort((a, b) => b.streak.compareTo(a.streak));
-    }
-    if (_selectedFilter == HabitFilter.newestStartDate) {
-      results.sort((a, b) => b.startDate.compareTo(a.startDate));
-    }
-    if (_selectedFilter == HabitFilter.oldestStartDate) {
-      results.sort((a, b) => a.startDate.compareTo(b.startDate));
-    }
-
-    return results;
-  }
-
-  String _filterLabel(HabitFilter filter) {
-    switch (filter) {
-      case HabitFilter.all:
-        return 'Tất cả';
-      case HabitFilter.completedToday:
-        return 'Đã hoàn thành hôm nay';
-      case HabitFilter.notCompleted:
-        return 'Chưa hoàn thành';
-      case HabitFilter.longestStreak:
-        return 'Streak dài nhất';
-      case HabitFilter.newestStartDate:
-        return 'Ngày bắt đầu gần nhất';
-      case HabitFilter.oldestStartDate:
-        return 'Ngày bắt đầu cũ nhất';
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    return '$day/$month/$year';
+    habitController.setFilter(selected);
   }
 
   IconData _habitIconFor(Habit habit) {
@@ -291,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _toggleHabitCompletion(String id, bool value) async {
     final milestoneHabit = await context
-        .read<HabitProvider>()
+        .read<HabitController>()
         .toggleHabitCompletion(id, value);
 
     if (milestoneHabit == null) {
@@ -332,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    await context.read<HabitProvider>().deleteHabit(habit.id);
+    await context.read<HabitController>().deleteHabit(habit.id);
     if (!mounted) {
       return;
     }
@@ -343,11 +289,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final habitProvider = context.watch<HabitProvider>();
-    final habitsToShow = _filteredHabits(habitProvider.habits);
+    final habitController = context.watch<HabitController>();
+    final habitsToShow = habitController.filteredHabits;
+    final completedTodayCount = habitController.habits
+        .where((habit) => habit.completedToday)
+        .length;
+    final totalHabits = habitController.habits.length;
+    final completionRate = totalHabits == 0
+        ? 0
+        : ((completedTodayCount / totalHabits) * 100).round();
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    if (habitProvider.isLoading) {
+    if (habitController.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -357,7 +310,13 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Thói quen của tôi - TH5 - G10'),
         centerTitle: false,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         actions: [
+          IconButton(
+            onPressed: _openFilterSheet,
+            tooltip: 'Lọc danh sách',
+            icon: const Icon(Icons.filter_list_rounded),
+          ),
           IconButton(
             onPressed: widget.onToggleTheme,
             tooltip: isDarkMode
@@ -372,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -384,111 +343,125 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Colors.orange.shade700,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Duy trì thói quen mỗi ngày',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_fire_department_rounded,
+                        color: Colors.orange.shade700,
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Duy trì thói quen mỗi ngày',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatPill(
+                          label: 'Đã hoàn thành',
+                          value: '$completedTodayCount/$totalHabits',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatPill(
+                          label: 'Tỷ lệ hôm nay',
+                          value: '$completionRate%',
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Tìm theo tên, danh mục, streak, ngày...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<HabitFilter>(
-              initialValue: _selectedFilter,
-              decoration: InputDecoration(
-                labelText: 'Lọc danh sách',
-                filled: true,
-                fillColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              items: HabitFilter.values
-                  .map(
-                    (filter) => DropdownMenuItem<HabitFilter>(
-                      value: filter,
-                      child: Text(_filterLabel(filter)),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Tìm theo tên, danh mục, streak...',
+                        prefixIcon: const Icon(Icons.search),
+                        fillColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainer,
+                      ),
+                      onChanged: (value) {
+                        habitController.setSearchQuery(value);
+                      },
                     ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                setState(() {
-                  _selectedFilter = value;
-                });
-              },
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
-                itemCount: habitsToShow.length,
-                itemBuilder: (context, index) {
-                  final habit = habitsToShow[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: HabitCard(
-                      name: habit.name,
-                      category: habit.category,
-                      categoryColor: _categoryColorFor(habit),
-                      startDate: _formatDate(habit.startDate),
-                      habitIcon: _habitIconFor(habit),
-                      streak: habit.streak,
-                      completedToday: habit.completedToday,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                HabitDetailScreen(habitId: habit.id),
+              child: habitsToShow.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.inbox_rounded,
+                            size: 52,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Chưa có thói quen phù hợp bộ lọc',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Thử đổi bộ lọc hoặc thêm thói quen mới',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: habitsToShow.length,
+                      itemBuilder: (context, index) {
+                        final habit = habitsToShow[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: HabitCard(
+                            name: habit.name,
+                            category: habit.category,
+                            categoryColor: _categoryColorFor(habit),
+                            habitIcon: _habitIconFor(habit),
+                            streak: habit.streak,
+                            completedToday: habit.completedToday,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      HabitDetailScreen(habitId: habit.id),
+                                ),
+                              );
+                            },
+                            onLongPress: () {
+                              _confirmDeleteHabit(habit);
+                            },
+                            onChanged: (value) {
+                              _toggleHabitCompletion(habit.id, value);
+                            },
                           ),
                         );
                       },
-                      onLongPress: () {
-                        _confirmDeleteHabit(habit);
-                      },
-                      onChanged: (value) {
-                        _toggleHabitCompletion(habit.id, value);
-                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
@@ -501,6 +474,37 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         child: const Icon(Icons.add_task_rounded),
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  const _StatPill({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }

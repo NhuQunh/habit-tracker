@@ -6,7 +6,6 @@ class HabitCard extends StatelessWidget {
     required this.name,
     required this.category,
     required this.categoryColor,
-    required this.startDate,
     required this.habitIcon,
     required this.streak,
     required this.completedToday,
@@ -18,7 +17,6 @@ class HabitCard extends StatelessWidget {
   final String name;
   final String category;
   final Color categoryColor;
-  final String startDate;
   final IconData habitIcon;
   final int streak;
   final bool completedToday;
@@ -75,13 +73,6 @@ class HabitCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: categoryColor,
                         fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Bắt đầu: $startDate',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
                       ),
                     ),
                     const SizedBox(height: 4),

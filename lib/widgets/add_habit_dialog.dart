@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/controllers/habit_controller.dart';
 import 'package:habit_tracker/models/habit.dart';
-import 'package:habit_tracker/providers/habit_provider.dart';
 import 'package:provider/provider.dart';
 
 class AddHabitDialog extends StatefulWidget {
@@ -67,7 +67,7 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
       startDate: _selectedDate,
     );
 
-    await context.read<HabitProvider>().addHabit(newHabit);
+    await context.read<HabitController>().addHabit(newHabit);
     if (!mounted) {
       return;
     }

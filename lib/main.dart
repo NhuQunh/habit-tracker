@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:habit_tracker/providers/habit_provider.dart';
-import 'package:habit_tracker/screens/splash_screen.dart';
+import 'package:habit_tracker/controllers/habit_controller.dart';
+import 'package:habit_tracker/screens/app_shell.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(
     ChangeNotifierProvider(
-      create: (_) => HabitProvider(),
+      create: (_) => HabitController(),
       child: const MyApp(),
     ),
   );
@@ -62,18 +62,35 @@ class _MyAppState extends State<MyApp> {
       title: 'Habit Tracker',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0EA5E9)),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF7FAFC),
+        cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
+          seedColor: const Color(0xFF0EA5E9),
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
+        cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
       themeMode: _themeMode,
-      home: SplashScreen(onToggleTheme: _toggleTheme),
+      home: AppShell(onToggleTheme: _toggleTheme),
     );
   }
 }
