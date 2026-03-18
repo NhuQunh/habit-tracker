@@ -4,6 +4,7 @@ import 'package:habit_tracker/controllers/habit_controller.dart';
 import 'package:habit_tracker/controllers/localization_provider.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/screens/habit_detail_screen.dart';
+import 'package:habit_tracker/widgets/add_habit_dialog.dart';
 import 'package:habit_tracker/widgets/habit_card.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +19,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+
+  Future<void> _openAddHabitDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => const AddHabitDialog(),
+    );
+  }
 
   @override
   void dispose() {
@@ -467,6 +475,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openAddHabitDialog,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Thêm thói quen'),
       ),
     );
   }
