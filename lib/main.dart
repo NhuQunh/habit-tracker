@@ -17,7 +17,11 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final isDailyReminderEnabled = prefs.getBool('daily_reminder_enabled') ?? true;
   if (isDailyReminderEnabled) {
-    await notificationService.scheduleDailyReminder();
+    try {
+      await notificationService.scheduleDailyReminder();
+    } catch (e) {
+      debugPrint('Daily reminder scheduling skipped: $e');
+    }
   }
 
   runApp(

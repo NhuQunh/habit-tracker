@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/services.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -93,17 +94,36 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      0, // notification id
-      'Nhắc nhở hoàn thành thói quen',
-      'Đã đến lúc thực hiện các thói quen tốt của bạn hôm nay!',
-      scheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // Repeat daily
-    );
+    try {
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        0, // notification id
+        'Nhắc nhở hoàn thành thói quen',
+        'Đã đến lúc thực hiện các thói quen tốt của bạn hôm nay!',
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // Repeat daily
+      );
+    } on PlatformException catch (e) {
+      if (e.code != 'exact_alarms_not_permitted') {
+        rethrow;
+      }
+
+      // Android 14+ can deny exact alarms. Fallback to inexact so app doesn't crash.
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        0, // notification id
+        'Nhắc nhở hoàn thành thói quen',
+        'Đã đến lúc thực hiện các thói quen tốt của bạn hôm nay!',
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // Repeat daily
+      );
+    }
   }
 
   Future<void> cancelDailyReminder() async {
