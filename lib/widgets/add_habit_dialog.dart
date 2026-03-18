@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracker/controllers/habit_controller.dart';
+import 'package:habit_tracker/controllers/localization_provider.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:provider/provider.dart';
 
@@ -16,13 +17,6 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
 
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategory;
-
-  static const List<String> _categories = [
-    'Sức khỏe',
-    'Học tập',
-    'Năng suất',
-    'Chánh niệm',
-  ];
 
   @override
   void dispose() {
@@ -76,8 +70,15 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = context.watch<LocalizationProvider>();
     final lightBlue = Colors.lightBlue.shade100;
     final bluePrimary = Colors.lightBlue.shade700;
+    final categories = [
+      localizationProvider.translate('category_health'),
+      localizationProvider.translate('category_learning'),
+      localizationProvider.translate('category_productivity'),
+      localizationProvider.translate('category_mindfulness'),
+    ];
 
     return AlertDialog(
       backgroundColor: Colors.lightBlue.shade50,
@@ -87,7 +88,7 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
           Icon(Icons.add_task_rounded, color: bluePrimary),
           const SizedBox(width: 8),
           Text(
-            'Thêm thói quen mới',
+            localizationProvider.translate('add_habit_title'),
             style: TextStyle(color: bluePrimary, fontWeight: FontWeight.w700),
           ),
         ],
@@ -101,8 +102,8 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'Tên thói quen',
-                  hintText: 'Nhập tên thói quen',
+                  labelText: localizationProvider.translate('habit_name'),
+                  hintText: localizationProvider.translate('habit_name_hint'),
                   filled: true,
                   fillColor: lightBlue.withValues(alpha: 0.35),
                   border: OutlineInputBorder(
@@ -112,7 +113,7 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Tên thói quen không được để trống';
+                    return localizationProvider.translate('habit_name_required');
                   }
                   return null;
                 },
@@ -123,7 +124,7 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
                   decoration: InputDecoration(
-                    labelText: 'Ngày bắt đầu',
+                    labelText: localizationProvider.translate('start_date'),
                     filled: true,
                     fillColor: lightBlue.withValues(alpha: 0.35),
                     border: OutlineInputBorder(
@@ -142,7 +143,7 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
               DropdownButtonFormField<String>(
                 initialValue: _selectedCategory,
                 decoration: InputDecoration(
-                  labelText: 'Danh mục',
+                  labelText: localizationProvider.translate('category'),
                   filled: true,
                   fillColor: lightBlue.withValues(alpha: 0.35),
                   border: OutlineInputBorder(
@@ -150,7 +151,7 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                items: _categories
+                items: categories
                     .map(
                       (category) => DropdownMenuItem<String>(
                         value: category,
@@ -165,7 +166,7 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Bạn cần chọn danh mục';
+                    return localizationProvider.translate('category_required');
                   }
                   return null;
                 },
@@ -178,12 +179,15 @@ class _AddHabitDialogState extends State<AddHabitDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Hủy', style: TextStyle(color: Colors.blueGrey.shade700)),
+          child: Text(
+            localizationProvider.translate('cancel'),
+            style: TextStyle(color: Colors.blueGrey.shade700),
+          ),
         ),
         ElevatedButton.icon(
           onPressed: _saveHabit,
           icon: const Icon(Icons.save_rounded, size: 18),
-          label: const Text('Lưu'),
+          label: Text(localizationProvider.translate('save')),
           style: ElevatedButton.styleFrom(
             backgroundColor: bluePrimary,
             foregroundColor: Colors.white,

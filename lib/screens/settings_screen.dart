@@ -196,7 +196,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: ListTile(
             leading: const Icon(Icons.logout_rounded),
-            title: const Text('Đăng xuất tài khoản Google'),
+            title: Text(localizationProvider.translate('sign_out_google')),
             onTap: () async {
               await _authService.signOut();
             },

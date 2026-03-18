@@ -17,6 +17,50 @@ class LocalizationService {
       'delete_confirm': 'Delete habit?',
       'delete_cancel': 'Cancel',
       'delete_confirm_btn': 'Delete',
+        'home_title': 'My Habits',
+        'filter_list': 'Filter list',
+        'switch_to_light': 'Switch to light mode',
+        'switch_to_dark': 'Switch to dark mode',
+        'keep_daily_habit': 'Keep habits every day',
+        'completed_label': 'Completed',
+        'today_rate': 'Today rate',
+        'search_hint': 'Search by name, category, streak...',
+        'no_habit_matches': 'No habits match the current filter',
+        'try_filter_or_add': 'Try changing filter or add a new habit',
+        'add_habit': 'Add habit',
+        'congrats': 'Congratulations!',
+        'milestone_message': '{habitName} reached {streak} streak days!',
+        'delete_habit_message':
+          'Are you sure you want to delete "{habitName}"? This action cannot be undone.',
+        'habit_deleted': 'Habit deleted',
+        'all': 'All',
+        'completed_today': 'Completed today',
+        'not_completed': 'Not completed',
+        'longest_streak': 'Longest streak',
+
+        // Add Habit Dialog
+        'add_habit_title': 'Add new habit',
+        'habit_name': 'Habit name',
+        'habit_name_hint': 'Enter habit name',
+        'habit_name_required': 'Habit name is required',
+        'start_date': 'Start date',
+        'category': 'Category',
+        'category_required': 'Please choose a category',
+        'cancel': 'Cancel',
+        'save': 'Save',
+        'category_health': 'Health',
+        'category_learning': 'Learning',
+        'category_productivity': 'Productivity',
+        'category_mindfulness': 'Mindfulness',
+
+        // Login
+        'login_cancelled': 'Login cancelled',
+        'login_subtitle': 'Sign in with Google to sync your habits.',
+        'processing': 'Processing...',
+        'sign_in_google': 'Sign in with Google',
+
+        // Settings
+        'sign_out_google': 'Sign out Google account',
 
       // Settings Screen
       'settings': 'Settings',
@@ -66,6 +110,50 @@ class LocalizationService {
       'delete_confirm': 'Xoá thói quen?',
       'delete_cancel': 'Huỷ',
       'delete_confirm_btn': 'Xoá',
+        'home_title': 'Thói quen của tôi',
+        'filter_list': 'Lọc danh sách',
+        'switch_to_light': 'Chuyển sang chế độ sáng',
+        'switch_to_dark': 'Chuyển sang chế độ tối',
+        'keep_daily_habit': 'Duy trì thói quen mỗi ngày',
+        'completed_label': 'Đã hoàn thành',
+        'today_rate': 'Tỷ lệ hôm nay',
+        'search_hint': 'Tìm theo tên, danh mục, streak...',
+        'no_habit_matches': 'Chưa có thói quen phù hợp bộ lọc',
+        'try_filter_or_add': 'Thử đổi bộ lọc hoặc thêm thói quen mới',
+        'add_habit': 'Thêm thói quen',
+        'congrats': 'Chúc mừng!',
+        'milestone_message': '{habitName} đã đạt mốc {streak} ngày streak!',
+        'delete_habit_message':
+          'Bạn có chắc muốn xóa "{habitName}" không? Hành động này không thể hoàn tác.',
+        'habit_deleted': 'Đã xóa thói quen',
+        'all': 'Tất cả',
+        'completed_today': 'Đã hoàn thành hôm nay',
+        'not_completed': 'Chưa hoàn thành',
+        'longest_streak': 'Streak dài nhất',
+
+        // Add Habit Dialog
+        'add_habit_title': 'Thêm thói quen mới',
+        'habit_name': 'Tên thói quen',
+        'habit_name_hint': 'Nhập tên thói quen',
+        'habit_name_required': 'Tên thói quen không được để trống',
+        'start_date': 'Ngày bắt đầu',
+        'category': 'Danh mục',
+        'category_required': 'Bạn cần chọn danh mục',
+        'cancel': 'Hủy',
+        'save': 'Lưu',
+        'category_health': 'Sức khỏe',
+        'category_learning': 'Học tập',
+        'category_productivity': 'Năng suất',
+        'category_mindfulness': 'Chánh niệm',
+
+        // Login
+        'login_cancelled': 'Đăng nhập bị hủy',
+        'login_subtitle': 'Đăng nhập với Google để đồng bộ thói quen của bạn.',
+        'processing': 'Đang xử lý...',
+        'sign_in_google': 'Đăng nhập với Google',
+
+        // Settings
+        'sign_out_google': 'Đăng xuất tài khoản Google',
 
       // Settings Screen
       'settings': 'Cài đặt',

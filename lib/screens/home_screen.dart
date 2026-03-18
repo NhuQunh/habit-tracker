@@ -62,7 +62,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? Icons.check_circle_rounded
                           : Icons.radio_button_unchecked_rounded,
                     ),
-                    title: Text(habitController.filterLabel(filter)),
+                    title: Text(
+                      habitController.filterLabel(
+                        filter,
+                        localizationProvider.currentLanguage,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.of(sheetContext).pop(filter);
                     },
@@ -107,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (name.contains('the duc') ||
         name.contains('thể dục') ||
+        category.contains('fitness') ||
         category.contains('van dong') ||
         category.contains('vận động')) {
       return Icons.fitness_center_rounded;
@@ -118,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return Icons.self_improvement_rounded;
     }
     if (name.contains('flutter') ||
+        category.contains('technology') ||
         category.contains('cong nghe') ||
         category.contains('công nghệ')) {
       return Icons.code_rounded;
@@ -129,25 +136,36 @@ class _HomeScreenState extends State<HomeScreen> {
   Color _categoryColorFor(Habit habit) {
     final category = habit.category.toLowerCase();
 
-    if (category.contains('sức khỏe') || category.contains('suc khoe')) {
+    if (category.contains('health') ||
+        category.contains('sức khỏe') ||
+        category.contains('suc khoe')) {
       return Colors.purple;
     }
-    if (category.contains('học tập') || category.contains('hoc tap')) {
+    if (category.contains('learning') ||
+        category.contains('học tập') ||
+        category.contains('hoc tap')) {
       return Colors.indigo;
     }
-    if (category.contains('năng suất') || category.contains('nang suat')) {
+    if (category.contains('productivity') ||
+        category.contains('năng suất') ||
+        category.contains('nang suat')) {
       return Colors.teal;
     }
     if (category.contains('chánh niệm') ||
+        category.contains('mindfulness') ||
         category.contains('chanh niem') ||
         category.contains('tinh thần') ||
         category.contains('tinh than')) {
       return Colors.deepOrange;
     }
-    if (category.contains('vận động') || category.contains('van dong')) {
+    if (category.contains('fitness') ||
+        category.contains('vận động') ||
+        category.contains('van dong')) {
       return Colors.redAccent;
     }
-    if (category.contains('công nghệ') || category.contains('cong nghe')) {
+    if (category.contains('technology') ||
+        category.contains('công nghệ') ||
+        category.contains('cong nghe')) {
       return Colors.blue;
     }
 
@@ -223,14 +241,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Chúc mừng!',
+                  context.read<LocalizationProvider>().translate('congrats'),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '$habitName đã đạt mốc $streak ngày streak!',
+                  context.read<LocalizationProvider>().translate(
+                    'milestone_message',
+                  )
+                      .replaceAll('{habitName}', habitName)
+                      .replaceAll('{streak}', streak.toString()),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
@@ -267,7 +289,9 @@ class _HomeScreenState extends State<HomeScreen> {
         return AlertDialog(
           title: Text(localizationProvider.translate('delete_confirm')),
           content: Text(
-            'Bạn có chắc muốn xóa "${habit.name}" không? Hành động này không thể hoàn tác.',
+            localizationProvider
+                .translate('delete_habit_message')
+                .replaceAll('{habitName}', habit.name),
           ),
           actions: [
             TextButton(
@@ -294,12 +318,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Đã xóa thói quen')));
+    ).showSnackBar(
+      SnackBar(content: Text(localizationProvider.translate('habit_deleted'))),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final habitController = context.watch<HabitController>();
+    final localizationProvider = context.watch<LocalizationProvider>();
     final habitsToShow = habitController.filteredHabits;
     final completedTodayCount = habitController.habits
         .where((habit) => habit.completedToday)
@@ -317,21 +344,21 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Thói quen của tôi - TH5 - G10'),
+        title: Text(localizationProvider.translate('home_title')),
         centerTitle: false,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             onPressed: _openFilterSheet,
-            tooltip: 'Lọc danh sách',
+            tooltip: localizationProvider.translate('filter_list'),
             icon: const Icon(Icons.filter_list_rounded),
           ),
           IconButton(
             onPressed: widget.onToggleTheme,
             tooltip: isDarkMode
-                ? 'Chuyển sang chế độ sáng'
-                : 'Chuyển sang chế độ tối',
+                ? localizationProvider.translate('switch_to_light')
+                : localizationProvider.translate('switch_to_dark'),
             icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
           ),
         ],
@@ -364,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Duy trì thói quen mỗi ngày',
+                          localizationProvider.translate('keep_daily_habit'),
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
@@ -376,14 +403,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Expanded(
                         child: _StatPill(
-                          label: 'Đã hoàn thành',
+                          label: localizationProvider.translate('completed_label'),
                           value: '$completedTodayCount/$totalHabits',
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _StatPill(
-                          label: 'Tỷ lệ hôm nay',
+                          label: localizationProvider.translate('today_rate'),
                           value: '$completionRate%',
                         ),
                       ),
@@ -401,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Tìm theo tên, danh mục, streak...',
+                        hintText: localizationProvider.translate('search_hint'),
                         prefixIcon: const Icon(Icons.search),
                         fillColor: Theme.of(
                           context,
@@ -429,12 +456,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'Chưa có thói quen phù hợp bộ lọc',
+                            localizationProvider.translate('no_habit_matches'),
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Thử đổi bộ lọc hoặc thêm thói quen mới',
+                            localizationProvider.translate('try_filter_or_add'),
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -479,7 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddHabitDialog,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Thêm thói quen'),
+        label: Text(localizationProvider.translate('add_habit')),
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/controllers/localization_provider.dart';
 import 'package:habit_tracker/services/auth_service.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,12 +15,15 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _handleGoogleSignIn() async {
+    final localizationProvider = context.read<LocalizationProvider>();
     setState(() => _isLoading = true);
     try {
       final result = await _authService.signInWithGoogle();
       if (result == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng nhập bị hủy')),
+          SnackBar(
+            content: Text(localizationProvider.translate('login_cancelled')),
+          ),
         );
       }
     } catch (e) {
@@ -41,6 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final localizationProvider = context.watch<LocalizationProvider>();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -73,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Đăng nhập với Google để đồng bộ thói quen của bạn.',
+                localizationProvider.translate('login_subtitle'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
@@ -92,7 +98,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.login_rounded),
-                  label: Text(_isLoading ? 'Đang xử lý...' : 'Đăng nhập với Google'),
+                  label: Text(
+                    _isLoading
+                        ? localizationProvider.translate('processing')
+                        : localizationProvider.translate('sign_in_google'),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

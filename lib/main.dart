@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:habit_tracker/controllers/habit_controller.dart';
@@ -89,9 +90,25 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = context.watch<LocalizationProvider>();
+
+    if (localizationProvider.isLoading) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     return MaterialApp(
       title: 'Habit Tracker',
       debugShowCheckedModeBanner: false,
+      locale: localizationProvider.locale,
+      supportedLocales: const [Locale('en'), Locale('vi')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0EA5E9)),
         useMaterial3: true,

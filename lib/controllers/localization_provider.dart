@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:habit_tracker/services/localization_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,6 +9,9 @@ class LocalizationProvider extends ChangeNotifier {
 
   AppLanguage get currentLanguage => _currentLanguage;
   bool get isLoading => _isLoading;
+  Locale get locale => _currentLanguage == AppLanguage.english
+      ? const Locale('en')
+      : const Locale('vi');
 
   LocalizationProvider() {
     _loadLanguage();

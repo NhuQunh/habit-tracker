@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/services/firebase_service.dart';
 import 'package:habit_tracker/services/habit_service.dart';
+import 'package:habit_tracker/services/localization_service.dart';
 import 'package:habit_tracker/services/notification_service.dart';
 
 enum HabitFilter { all, completedToday, notCompleted, longestStreak }
@@ -142,16 +143,16 @@ class HabitController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String filterLabel(HabitFilter filter) {
+  String filterLabel(HabitFilter filter, AppLanguage language) {
     switch (filter) {
       case HabitFilter.all:
-        return 'Tất cả';
+        return LocalizationService.translate('all', language);
       case HabitFilter.completedToday:
-        return 'Đã hoàn thành hôm nay';
+        return LocalizationService.translate('completed_today', language);
       case HabitFilter.notCompleted:
-        return 'Chưa hoàn thành';
+        return LocalizationService.translate('not_completed', language);
       case HabitFilter.longestStreak:
-        return 'Streak dài nhất';
+        return LocalizationService.translate('longest_streak', language);
     }
   }
 
