@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/controllers/habit_controller.dart';
 import 'package:habit_tracker/controllers/localization_provider.dart';
+import 'package:habit_tracker/widgets/progress_chart.dart';
 import 'package:provider/provider.dart';
 
 class StatisticsScreen extends StatelessWidget {
@@ -9,6 +11,15 @@ class StatisticsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localizationProvider = context.watch<LocalizationProvider>();
+    final habitController = context.watch<HabitController>();
+
+    final stats = habitController.calculateWeeklyStats();
+    final totalHabits = stats['totalHabits'] as int;
+    final completionRate = (stats['completionRate'] as double) * 100;
+
+    if (habitController.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
@@ -23,45 +34,41 @@ class StatisticsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Tong quan tien do habit trong tuan.',
+            localizationProvider.translate('weekly_overview'),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
+                  title: localizationProvider.translate('total_habits'),
+                  value: '$totalHabits',
+                  icon: Icons.list_alt,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SummaryCard(
+                  title: localizationProvider.translate('completion_rate'),
+                  value: '${completionRate.toStringAsFixed(0)}%',
+                  icon: Icons.check_circle_outline,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Expanded(
             child: Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hoan thanh 7 ngay gan nhat',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const _Bar(value: 0.65, label: 'T2'),
-                    const _Bar(value: 0.8, label: 'T3'),
-                    const _Bar(value: 0.45, label: 'T4'),
-                    const _Bar(value: 0.9, label: 'T5'),
-                    const _Bar(value: 0.7, label: 'T6'),
-                    const _Bar(value: 0.5, label: 'T7'),
-                    const _Bar(value: 0.85, label: 'CN'),
-                    const Spacer(),
-                    Text(
-                      'Ty le trung binh: 69%',
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
+              child: ProgressChart(habits: habitController.habits),
             ),
           ),
         ],
@@ -70,30 +77,47 @@ class StatisticsScreen extends StatelessWidget {
   }
 }
 
-class _Bar extends StatelessWidget {
-  const _Bar({required this.value, required this.label});
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
-  final double value;
-  final String label;
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 28, child: Text(label)),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                minHeight: 10,
-                value: value,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              ),
-            ),
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
           ),
         ],
       ),
