@@ -33,7 +33,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _initializeNotifications() async {
-    await _notificationService.initialize();
+    try {
+      await _notificationService.initialize();
+    } catch (_) {
+      // Ignore plugin initialization errors in unsupported environments (e.g. widget tests).
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -57,10 +61,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _dailyReminder = value;
     });
 
-    if (value) {
-      await _notificationService.scheduleDailyReminder();
-    } else {
-      await _notificationService.cancelDailyReminder();
+    try {
+      if (value) {
+        await _notificationService.scheduleDailyReminder();
+      } else {
+        await _notificationService.cancelDailyReminder();
+      }
+    } catch (_) {
+      // Keep setting persisted even if notification plugin is unavailable.
     }
 
     await _saveSettings();

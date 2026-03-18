@@ -1,30 +1,48 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:habit_tracker/controllers/habit_controller.dart';
+import 'package:habit_tracker/controllers/localization_provider.dart';
 import 'package:habit_tracker/main.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  Future<void> pumpApp(WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => HabitController()),
+          ChangeNotifierProvider(create: (_) => LocalizationProvider()),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('app shell renders bottom navigation', (
+    WidgetTester tester,
+  ) async {
+    await pumpApp(tester);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.settings_rounded), findsOneWidget);
+  });
+
+  testWidgets('can switch from home tab to settings tab', (
+    WidgetTester tester,
+  ) async {
+    await pumpApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SwitchListTile), findsWidgets);
   });
 }
