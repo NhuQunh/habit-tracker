@@ -84,6 +84,13 @@ class HabitController extends ChangeNotifier {
 
         final lastDate = habit.lastStreakIncreaseDate;
         if (lastDate == null) {
+          final hasCompletedToday = habit.completionDates.any(
+            (date) => _isSameDate(date, todayDate),
+          );
+          if (habit.completedToday != hasCompletedToday) {
+            habit.completedToday = hasCompletedToday;
+            hasChanges = true;
+          }
           continue;
         }
 
@@ -97,9 +104,19 @@ class HabitController extends ChangeNotifier {
           habit.streak = 0;
           hasChanges = true;
         }
+
+        final hasCompletedTodayByDate =
+            _isSameDate(normalizedLastDate, todayDate) ||
+            habit.completionDates.any((date) => _isSameDate(date, todayDate));
+        if (habit.completedToday != hasCompletedTodayByDate) {
+          habit.completedToday = hasCompletedTodayByDate;
+          hasChanges = true;
+        }
       }
 
-      final shouldReset = await _habitService.shouldResetCompletedForNewDay();
+      final shouldReset = await _habitService.shouldResetCompletedForNewDay(
+        userId: _activeUserId,
+      );
       if (shouldReset) {
         for (final habit in _habits) {
           habit.completedToday = false;

@@ -55,6 +55,13 @@ class HabitService {
     return '${_habitsKey}_$userId';
   }
 
+  String _lastOpenDateKeyForUser(String? userId) {
+    if (userId == null || userId.isEmpty) {
+      return _lastOpenDateKey;
+    }
+    return '${_lastOpenDateKey}_$userId';
+  }
+
   Future<List<Habit>> loadHabits({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
     final scopedKey = _habitsKeyForUser(userId);
@@ -120,12 +127,12 @@ class HabitService {
     await prefs.setString(_habitsKeyForUser(userId), encoded);
   }
 
-  Future<bool> shouldResetCompletedForNewDay() async {
+  Future<bool> shouldResetCompletedForNewDay({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
     final todayKey = _dateKey(DateTime.now());
-    final lastOpenDate = prefs.getString(_lastOpenDateKey);
+    final lastOpenDate = prefs.getString(_lastOpenDateKeyForUser(userId));
 
-    await prefs.setString(_lastOpenDateKey, todayKey);
+    await prefs.setString(_lastOpenDateKeyForUser(userId), todayKey);
     return lastOpenDate != null && lastOpenDate != todayKey;
   }
 

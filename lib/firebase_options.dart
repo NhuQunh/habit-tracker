@@ -45,12 +45,13 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'habittracker-2bda8',
-    authDomain: 'habittracker-2bda8.firebaseapp.com',
-    storageBucket: 'habittracker-2bda8.firebasestorage.app',
+    apiKey: "AIzaSyADAofHrhIqcleu6UqTyBYBA8yXk3nx7pU",
+    authDomain: "habittracker-2bda8.firebaseapp.com",
+    projectId: "habittracker-2bda8",
+    storageBucket: "habittracker-2bda8.firebasestorage.app",
+    messagingSenderId: "768159940383",
+    appId: "1:768159940383:web:d39fb9858a36ef0c83fa2a",
+    measurementId: "G-5P60R1F34M"
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
